@@ -30,21 +30,22 @@ export default function WrappedStory({ onComplete }) {
   const audioRef = useRef(null);
   const videoRef = useRef(null);
 
+  // iPhone Fix: Forceer video play zodra de slide verschijnt
+  useEffect(() => {
+    if (current === 11 && videoRef.current) {
+      videoRef.current.play().catch(err => console.log("Video playback failed: ", err));
+    }
+  }, [current]);
+
   useEffect(() => {
     if (!started) return;
 
     if (audioRef.current) {
-      if (current === 11) { // Sam Video
-        audioRef.current.volume = 0.05; 
-      } else {
-        audioRef.current.volume = 0.5;
-        audioRef.current.play().catch(() => {});
-      }
+      audioRef.current.volume = current === 11 ? 0.05 : 0.5;
+      audioRef.current.play().catch(() => {});
     }
 
-    // Timings: 7s voor normaal, 22s voor de race, 11s voor de video
     const duration = current === 10 ? 22000 : (current === 11 ? 11000 : 7000);
-    
     const timer = setTimeout(() => {
       if (current < slides.length - 1) setCurrent(current + 1);
       else if (onComplete) onComplete();
@@ -55,37 +56,35 @@ export default function WrappedStory({ onComplete }) {
 
   const handleStart = () => setStarted(true);
 
-  const s = slides[current];
-
-  // Spotify-stijl zoom en blur overgangen
+  // Geoptimaliseerde animaties voor iPhone (minder blur, minder scale)
   const slideVariants = {
-    initial: { scale: 1.3, filter: 'blur(20px)', opacity: 0 },
-    animate: { scale: 1, filter: 'blur(0px)', opacity: 1 },
-    exit: { scale: 0.8, filter: 'blur(15px)', opacity: 0 }
+    initial: { scale: 1.1, opacity: 0 },
+    animate: { scale: 1, opacity: 1 },
+    exit: { scale: 0.95, opacity: 0 }
   };
 
   if (!started) {
     return (
       <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center z-[200]">
-        <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 3 }} className="text-8xl mb-12">🎁</motion.div>
-        <h1 className="text-white text-5xl font-black mb-8 italic uppercase leading-tight tracking-tighter">Jouw Jaar<br/><span className="text-[#1DB954]">Unwrapped</span></h1>
-        <button onClick={handleStart} className="bg-[#1DB954] text-black px-12 py-6 rounded-full font-black text-2xl uppercase tracking-widest active:scale-95 transition-transform shadow-2xl">
-          Start Story
+        <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 3 }} className="text-8xl mb-12">🎁</motion.div>
+        <h1 className="text-white text-5xl font-black mb-8 italic uppercase leading-none">USOCIA<br/><span className="text-[#1DB954]">UNWRAPPED</span></h1>
+        <button onClick={handleStart} className="bg-[#1DB954] text-black px-12 py-5 rounded-full font-black text-2xl uppercase tracking-widest active:scale-90 transition-transform shadow-2xl">
+          START
         </button>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 w-full h-[100dvh] bg-black flex flex-col items-center justify-center overflow-hidden">
-      <audio ref={audioRef} src="/muziek.mp3" loop />
+    <div className="fixed inset-0 w-full h-full bg-black flex flex-col items-center justify-center overflow-hidden touch-none">
+      <audio ref={audioRef} src="/muziek.mp3" loop playsInline />
       
       {/* Progress Bars */}
       <div className="absolute top-12 left-4 right-4 flex gap-1 z-[100]">
         {slides.map((_, i) => (
           <div key={i} className="h-1 flex-1 bg-white/20 rounded-full overflow-hidden">
             <motion.div 
-              className="h-full bg-white shadow-[0_0_8px_white]" 
+              className="h-full bg-white shadow-[0_0_5px_white]" 
               initial={{ width: 0 }} 
               animate={{ width: i === current ? '100%' : (i < current ? '100%' : '0%') }}
               transition={{ duration: i === current ? (current === 10 ? 22 : (current === 11 ? 11 : 7)) : 0, ease: 'linear' }}
@@ -101,45 +100,39 @@ export default function WrappedStory({ onComplete }) {
           initial="initial"
           animate="animate"
           exit="exit"
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full h-full flex flex-col items-center justify-center p-6 text-center relative overflow-hidden"
+          transition={{ duration: 0.5 }}
+          className="w-full h-full flex flex-col items-center justify-center p-6 text-center relative overflow-hidden will-change-transform"
           style={{ backgroundColor: s.bg }}
         >
-          {/* Achtergrond effecten */}
-          <div className="absolute inset-0 pointer-events-none opacity-30 blur-[50px]">
-            <motion.div animate={{ rotate: 360, scale: [1, 1.2, 1] }} transition={{ duration: 15, repeat: Infinity }} className="absolute -top-10 -right-10 w-64 h-64 bg-white/40 rounded-full" />
-            <motion.div animate={{ x: [-50, 50, -50] }} transition={{ duration: 10, repeat: Infinity }} className="absolute bottom-10 -left-10 w-64 h-64 bg-black/40 rounded-full" />
-          </div>
-
           {/* LAYOUT: HERO */}
           {s.layout === 'hero' && (
-            <div className="z-10">
-              <h2 className="text-xl font-black tracking-[0.4em] text-black/70 mb-4 uppercase">{s.sub}</h2>
-              <h1 className="text-8xl font-black text-black italic leading-[0.8] tracking-tighter uppercase">{s.title}</h1>
+            <div className="z-10 px-4">
+              <h2 className="text-xl font-black tracking-[0.3em] text-black/70 mb-4 uppercase">{s.sub}</h2>
+              <h1 className="text-7xl font-black text-black italic leading-[0.8] tracking-tighter uppercase">{s.title}</h1>
             </div>
           )}
 
-          {/* LAYOUT: MCD (Gefixed en zichtbaar) */}
+          {/* LAYOUT: MCD */}
           {s.layout === 'mcd' && (
             <div className="z-10 flex flex-col items-center">
-              <motion.div animate={{ y: [-15, 15, -15] }} transition={{ repeat: Infinity, duration: 2.5 }} className="text-9xl mb-6">🍟</motion.div>
-              <h1 className="text-8xl font-black text-white mb-2 tracking-tighter">{s.title}</h1>
-              <h2 className="text-2xl font-black text-yellow-400 bg-black px-4 py-1 rotate-[-3deg] inline-block mb-8 uppercase tracking-widest">{s.sub}</h2>
-              <p className="text-xl font-bold text-white italic max-w-[280px] leading-snug px-4 drop-shadow-lg">{s.desc}</p>
+              <div className="text-8xl mb-4">🍟</div>
+              <h1 className="text-7xl font-black text-white mb-2 tracking-tighter">{s.title}</h1>
+              <h2 className="text-2xl font-black text-yellow-400 bg-black px-4 py-1 rotate-[-3deg] inline-block mb-6 uppercase tracking-widest">{s.sub}</h2>
+              <p className="text-lg font-bold text-white italic max-w-[260px] px-4 leading-tight">{s.desc}</p>
             </div>
           )}
 
-          {/* LAYOUT: RACE (22 sec) */}
+          {/* LAYOUT: RACE */}
           {s.layout === 'race' && (
             <div className="w-full h-full pt-28 pb-12 flex flex-col z-10 px-4">
-               <h2 className="text-2xl font-black text-white italic mb-12 uppercase tracking-widest">Wie wint 2026?</h2>
-               <div className="space-y-8 flex-1">
+               <h2 className="text-xl font-black text-white italic mb-10 uppercase tracking-widest leading-none">Wie wint 2026?</h2>
+               <div className="space-y-6 flex-1">
                  {cities.map((city, i) => (
                    <div key={i} className="relative">
-                      <div className="text-[12px] font-black text-white/50 mb-1 uppercase tracking-tighter px-2">{city.n}</div>
-                      <div className="h-5 bg-white/10 rounded-full relative overflow-hidden border border-white/20">
+                      <div className="text-[10px] font-black text-white/40 mb-1 uppercase tracking-tighter px-1">{city.n}</div>
+                      <div className="h-4 bg-white/5 rounded-full relative overflow-hidden border border-white/10">
                           <motion.div 
-                            className="h-full absolute left-0 top-0 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                            className="h-full absolute left-0 top-0 rounded-full"
                             style={{ backgroundColor: city.c }}
                             initial={{ width: '0%' }}
                             animate={{ 
@@ -150,67 +143,64 @@ export default function WrappedStory({ onComplete }) {
                             transition={{ duration: 19, times: [0, 0.2, 0.5, 0.8, 1], ease: "easeInOut" }}
                           />
                           <motion.div 
-                            className="w-12 h-12 rounded-full absolute -top-3.5 flex items-center justify-center bg-white shadow-2xl border-2 border-black"
+                            className="w-10 h-10 rounded-full absolute -top-3 flex items-center justify-center bg-white shadow-lg border border-black"
                             animate={{ 
                               left: city.n === 'Wenen' 
-                                ? ['0%', '44%', '10%', '19%', '89%'] 
-                                : ['0%', `${30 + i * 12}%`, `${65 + Math.random() * 10}%`, '80%'] 
+                                ? ['0%', '42%', '10%', '18%', '88%'] 
+                                : ['0%', `${30 + i * 12}%`, `${65 + Math.random() * 10}%`, '82%'] 
                             }}
                             transition={{ duration: 19, times: [0, 0.2, 0.5, 0.8, 1], ease: "easeInOut" }}
                           >
-                            <span className="text-2xl">{city.icon}</span>
+                            <span className="text-xl">{city.icon}</span>
                           </motion.div>
                       </div>
                    </div>
                  ))}
                </div>
                <motion.div 
-                 initial={{ opacity: 0, scale: 2.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 19.5 }}
-                 className="absolute inset-0 bg-red-600 flex flex-col items-center justify-center z-[120] p-10 shadow-[inset_0_0_100px_rgba(0,0,0,0.5)]"
+                 initial={{ opacity: 0, scale: 1.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 19.8 }}
+                 className="absolute inset-0 bg-red-600 flex flex-col items-center justify-center z-[120] p-6"
                >
-                 <motion.h1 animate={{ scale: [1, 1.1, 1], rotate: [-2, 2, -2] }} transition={{ repeat: Infinity, duration: 0.3 }} className="text-8xl font-black text-white italic leading-none mb-6 text-shadow-xl">WENEN!</motion.h1>
-                 <p className="bg-white text-black px-10 py-4 font-black text-3xl uppercase tracking-tighter rotate-3 shadow-2xl">GEWONNEN!</p>
+                 <h1 className="text-7xl font-black text-white italic leading-none mb-4">WENEN!</h1>
+                 <p className="bg-white text-black px-8 py-3 font-black text-2xl uppercase tracking-tighter rotate-3 shadow-xl">GEWONNEN!</p>
                </motion.div>
             </div>
           )}
 
-          {/* LAYOUT: VIDEO (11 sec) */}
+          {/* LAYOUT: VIDEO - IPHONE OPTIMIZED */}
           {s.layout === 'video' && (
             <div className="absolute inset-0 bg-black flex items-center justify-center z-[130]">
               <video 
-                ref={videoRef} src="/video.mp4" autoPlay playsInline
+                ref={videoRef} 
+                src="/video.mp4" 
+                playsInline 
+                webkit-playsinline="true"
+                preload="auto"
                 className="w-full h-full object-cover"
               />
-              <motion.div 
-                initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 }}
-                className="absolute bottom-24 left-6 right-6 text-left bg-[#1DB954] p-6 rounded-2xl shadow-2xl rotate-[-2deg]"
-              >
+              <div className="absolute bottom-20 left-6 right-6 text-left bg-[#1DB954] p-5 rounded-xl shadow-2xl rotate-[-2deg]">
                 <h2 className="text-black text-2xl font-black italic uppercase leading-tight">Sam heeft het<br/>laatste woord...</h2>
-              </motion.div>
+              </div>
             </div>
           )}
 
-          {/* FALLBACK VOOR TEXT SLIDES (7 sec) */}
+          {/* FALLBACK FOR TEXT SLIDES */}
           {['stats', 'genres', 'skip', 'fact', 'list', 'weird', 'music', 'age'].includes(s.layout) && (
-            <div className="z-10 flex flex-col items-center w-full px-6 pt-10">
-               <motion.h1 className="text-7xl font-black text-white italic leading-[0.85] uppercase mb-8 tracking-tighter text-shadow-lg">{s.title}</motion.h1>
-               <h2 className="text-2xl font-black text-black bg-white px-6 py-2 inline-block mb-10 rotate-2 uppercase shadow-xl">{s.sub}</h2>
-               {s.desc && <p className="text-xl font-bold text-white italic opacity-90 leading-snug mb-10 text-center">{s.desc}</p>}
+            <div className="z-10 flex flex-col items-center w-full px-4">
+               <motion.h1 className="text-6xl font-black text-white italic leading-[0.9] uppercase mb-6 tracking-tighter">{s.title}</motion.h1>
+               <h2 className="text-2xl font-black text-black bg-white px-4 py-1 inline-block mb-6 rotate-2 uppercase">{s.sub}</h2>
+               {s.desc && <p className="text-lg font-bold text-white italic opacity-90 leading-snug mb-8 text-center px-4">{s.desc}</p>}
                {s.items && (
-                 <div className="w-full space-y-4">
+                 <div className="w-full space-y-3 px-4">
                    {s.items.map((it, idx) => (
-                     <motion.div 
-                        key={idx} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + idx * 0.1 }}
-                        className="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-3xl font-black text-2xl uppercase italic text-white shadow-xl text-center"
-                     >
+                     <div key={idx} className="bg-white/10 border border-white/20 p-4 rounded-2xl font-black text-xl uppercase italic text-white shadow-md">
                        {it}
-                     </motion.div>
+                     </div>
                    ))}
                  </div>
                )}
             </div>
           )}
-
         </motion.div>
       </AnimatePresence>
     </div>
