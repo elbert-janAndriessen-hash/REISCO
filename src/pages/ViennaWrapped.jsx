@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -31,14 +30,11 @@ export default function WrappedStory({ onComplete }) {
   const audioRef = useRef(null);
   const videoRef = useRef(null);
 
-  // Timer logica
+  // Timer beheer
   useEffect(() => {
     if (!started) return;
 
-    const isRace = current === 10;
-    const isVideo = current === 11;
-    const duration = isRace ? 22000 : (isVideo ? 11000 : 7000);
-
+    const duration = current === 10 ? 22000 : (current === 11 ? 11000 : 7000);
     const timer = setTimeout(() => {
       if (current < slides.length - 1) {
         setCurrent(prev => prev + 1);
@@ -48,44 +44,59 @@ export default function WrappedStory({ onComplete }) {
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [current, started]);
+  }, [current, started, onComplete]);
 
-  // Audio volume logica
+  // Audio volume en Video play trigger
   useEffect(() => {
-    if (started && audioRef.current) {
+    if (!started) return;
+
+    if (audioRef.current) {
       audioRef.current.volume = current === 11 ? 0.05 : 0.5;
+    }
+
+    if (current === 11 && videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(e => console.log("Video playback error:", e));
     }
   }, [current, started]);
 
   const handleStart = () => {
+    // 1. Toestand bijwerken
     setStarted(true);
-    // iPhone unlock audio/video
-    if (audioRef.current) audioRef.current.play().catch(() => {});
+
+    // 2. Audio ontgrendelen en afspelen
+    if (audioRef.current) {
+      audioRef.current.play().catch(e => console.log("Audio unlock failed:", e));
+    }
+
+    // 3. Video ontgrendelen (kort afspelen en pauzeren voor buffering)
     if (videoRef.current) {
-        videoRef.current.load();
-        videoRef.current.play().catch(() => {});
+      videoRef.current.play().then(() => {
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0;
+      }).catch(e => console.log("Video priming failed:", e));
     }
   };
 
   const s = slides[current];
 
-  // Geoptimaliseerd voor iPhone (Geen blur!)
+  // Geoptimaliseerde iPhone animaties (geen blur!)
   const slideVariants = {
-    initial: { opacity: 0, scale: 1 },
-    animate: { opacity: 1, scale: 1 },
-    exit: { opacity: 0, scale: 1 }
+    initial: { opacity: 0, x: 20 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -20 }
   };
 
   if (!started) {
     return (
-      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center z-[200]">
-        <div className="text-8xl mb-12">🎁</div>
-        <h1 className="text-white text-5xl font-black mb-8 italic uppercase tracking-tighter">USOCIA<br/><span className="text-[#1DB954]">UNWRAPPED</span></h1>
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center z-[300]">
+        <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 2 }} className="text-9xl mb-12 text-white">🎁</motion.div>
+        <h1 className="text-white text-5xl font-black mb-8 italic uppercase tracking-tighter leading-none">Jouw 2026<br/><span className="text-[#1DB954]">Unwrapped</span></h1>
         <button 
           onClick={handleStart} 
-          className="bg-[#1DB954] text-black px-12 py-5 rounded-full font-black text-2xl uppercase tracking-widest active:scale-95 transition-transform"
+          className="bg-[#1DB954] text-black px-12 py-6 rounded-full font-black text-2xl uppercase tracking-widest active:scale-95 transition-transform shadow-[0_0_40px_rgba(29,185,84,0.4)]"
         >
-          START
+          START DE STORY
         </button>
       </div>
     );
@@ -93,7 +104,8 @@ export default function WrappedStory({ onComplete }) {
 
   return (
     <div className="fixed inset-0 w-full h-full bg-black overflow-hidden touch-none select-none">
-      <audio ref={audioRef} src="/muziek.mp3" loop playsInline />
+      {/* Verborgen Media Elementen */}
+      <audio ref={audioRef} src="/muziek.mp3" loop playsInline preload="auto" />
       
       {/* Progress Bars */}
       <div className="absolute top-12 left-4 right-4 flex gap-1 z-[100]">
@@ -120,33 +132,25 @@ export default function WrappedStory({ onComplete }) {
           className="w-full h-full flex flex-col items-center justify-center p-6 text-center relative overflow-hidden"
           style={{ backgroundColor: s.bg }}
         >
-          {/* LAYOUT: HERO */}
-          {s.layout === 'hero' && (
-            <div className="z-10 px-4">
-              <h2 className="text-xl font-black tracking-[0.3em] text-black/70 mb-4 uppercase">{s.sub}</h2>
-              <h1 className="text-7xl font-black text-black italic leading-[0.8] tracking-tighter uppercase">{s.title}</h1>
-            </div>
-          )}
-
-          {/* LAYOUT: MCD */}
+          {/* LAYOUT: MCD (Gefixed: Tekst nu 100% zichtbaar) */}
           {s.layout === 'mcd' && (
             <div className="z-10 flex flex-col items-center">
-              <div className="text-8xl mb-4">🍟</div>
-              <h1 className="text-7xl font-black text-white mb-2 tracking-tighter">{s.title}</h1>
-              <h2 className="text-2xl font-black text-yellow-400 bg-black px-4 py-1 rotate-[-3deg] inline-block mb-6 uppercase tracking-widest">{s.sub}</h2>
-              <p className="text-lg font-bold text-white italic max-w-[260px] leading-tight">{s.desc}</p>
+              <div className="text-9xl mb-4">🍟</div>
+              <h1 className="text-7xl font-black text-white mb-2 tracking-tighter drop-shadow-lg">{s.title}</h1>
+              <h2 className="text-2xl font-black text-yellow-400 bg-black px-4 py-1 rotate-[-3deg] inline-block mb-8 uppercase tracking-widest">{s.sub}</h2>
+              <p className="text-xl font-bold text-white italic max-w-[280px] leading-tight px-4">{s.desc}</p>
             </div>
           )}
 
           {/* LAYOUT: RACE */}
           {s.layout === 'race' && (
             <div className="w-full h-full pt-28 pb-12 flex flex-col z-10 px-4">
-               <h2 className="text-xl font-black text-white italic mb-10 uppercase tracking-widest leading-none">Wie wint 2026?</h2>
+               <h2 className="text-2xl font-black text-white italic mb-10 uppercase tracking-widest">Wie wint 2026?</h2>
                <div className="space-y-6 flex-1">
                  {cities.map((city, i) => (
                    <div key={i} className="relative">
-                      <div className="text-[10px] font-black text-white/40 mb-1 uppercase tracking-tighter px-1">{city.n}</div>
-                      <div className="h-4 bg-white/5 rounded-full relative overflow-hidden border border-white/10">
+                      <div className="text-[11px] font-black text-white/50 mb-1 uppercase tracking-tighter px-2">{city.n}</div>
+                      <div className="h-5 bg-white/10 rounded-full relative overflow-hidden border border-white/20">
                           <motion.div 
                             className="h-full absolute left-0 top-0 rounded-full"
                             style={{ backgroundColor: city.c }}
@@ -159,31 +163,31 @@ export default function WrappedStory({ onComplete }) {
                             transition={{ duration: 19, times: [0, 0.2, 0.5, 0.8, 1], ease: "easeInOut" }}
                           />
                           <motion.div 
-                            className="w-10 h-10 rounded-full absolute -top-3 flex items-center justify-center bg-white shadow-lg border border-black"
+                            className="w-12 h-12 rounded-full absolute -top-3.5 flex items-center justify-center bg-white shadow-xl border-2 border-black"
                             animate={{ 
                               left: city.n === 'Wenen' 
-                                ? ['0%', '42%', '10%', '18%', '88%'] 
-                                : ['0%', `${30 + i * 12}%`, `${65 + Math.random() * 10}%`, '82%'] 
+                                ? ['0%', '44%', '10%', '19%', '89%'] 
+                                : ['0%', `${30 + i * 12}%`, `${65 + Math.random() * 10}%`, '80%'] 
                             }}
                             transition={{ duration: 19, times: [0, 0.2, 0.5, 0.8, 1], ease: "easeInOut" }}
                           >
-                            <span className="text-xl">{city.icon}</span>
+                            <span className="text-2xl">{city.icon}</span>
                           </motion.div>
                       </div>
                    </div>
                  ))}
                </div>
                <motion.div 
-                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 19.8 }}
-                 className="absolute inset-0 bg-red-600 flex flex-col items-center justify-center z-[120] p-6"
+                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 19.5 }}
+                 className="absolute inset-0 bg-red-600 flex flex-col items-center justify-center z-[120] p-10"
                >
-                 <h1 className="text-7xl font-black text-white italic leading-none mb-4">WENEN!</h1>
-                 <p className="bg-white text-black px-8 py-3 font-black text-2xl uppercase rotate-3">GEWONNEN!</p>
+                 <h1 className="text-8xl font-black text-white italic leading-none mb-6">WENEN!</h1>
+                 <p className="bg-white text-black px-10 py-4 font-black text-3xl uppercase rotate-3 shadow-2xl">GEWONNEN!</p>
                </motion.div>
             </div>
           )}
 
-          {/* LAYOUT: VIDEO */}
+          {/* LAYOUT: VIDEO (Slide 11) */}
           {s.layout === 'video' && (
             <div className="absolute inset-0 bg-black flex items-center justify-center z-[130]">
               <video 
@@ -191,25 +195,24 @@ export default function WrappedStory({ onComplete }) {
                 src="/video.mp4" 
                 playsInline 
                 webkit-playsinline="true"
-                autoPlay
                 className="w-full h-full object-cover"
               />
-              <div className="absolute bottom-20 left-6 right-6 text-left bg-[#1DB954] p-5 rounded-xl rotate-[-2deg]">
-                <h2 className="text-black text-2xl font-black italic uppercase leading-tight">Sam heeft het<br/>laatste woord...</h2>
+              <div className="absolute bottom-24 left-6 right-6 text-left bg-[#1DB954] p-6 rounded-2xl shadow-2xl rotate-[-2deg]">
+                <h2 className="text-black text-3xl font-black italic uppercase leading-none">Sam heeft het<br/>laatste woord...</h2>
               </div>
             </div>
           )}
 
-          {/* FALLBACK FOR TEXT SLIDES */}
-          {['stats', 'genres', 'skip', 'fact', 'list', 'weird', 'music', 'age'].includes(s.layout) && (
-            <div className="z-10 flex flex-col items-center w-full px-4">
-               <h1 className="text-6xl font-black text-white italic leading-[0.9] uppercase mb-6 tracking-tighter">{s.title}</h1>
-               <h2 className="text-2xl font-black text-black bg-white px-4 py-1 inline-block mb-6 rotate-2 uppercase">{s.sub}</h2>
-               {s.desc && <p className="text-lg font-bold text-white italic opacity-90 leading-snug mb-8 text-center px-4">{s.desc}</p>}
+          {/* OVERIGE LAYOUTS */}
+          {['hero', 'stats', 'genres', 'skip', 'fact', 'list', 'weird', 'music', 'age'].includes(s.layout) && s.layout !== 'mcd' && (
+            <div className="z-10 flex flex-col items-center w-full px-6">
+               <motion.h1 className="text-7xl font-black text-white italic leading-[0.8] uppercase mb-8 tracking-tighter drop-shadow-md">{s.title}</motion.h1>
+               <h2 className="text-2xl font-black text-black bg-white px-6 py-2 inline-block mb-10 rotate-2 uppercase">{s.sub}</h2>
+               {s.desc && <p className="text-xl font-bold text-white italic opacity-90 text-center mb-8 px-4 leading-tight">{s.desc}</p>}
                {s.items && (
-                 <div className="w-full space-y-3 px-4">
+                 <div className="w-full space-y-4">
                    {s.items.map((it, idx) => (
-                     <div key={idx} className="bg-white/10 border border-white/20 p-4 rounded-2xl font-black text-xl uppercase italic text-white shadow-md">
+                     <div key={idx} className="bg-white/10 border-2 border-white/20 p-5 rounded-3xl font-black text-2xl uppercase italic text-white shadow-xl">
                        {it}
                      </div>
                    ))}
