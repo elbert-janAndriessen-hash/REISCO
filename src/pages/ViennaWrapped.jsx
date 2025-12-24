@@ -30,42 +30,40 @@ export default function WrappedStory({ onComplete }) {
   const audioRef = useRef(null);
   const videoRef = useRef(null);
 
-  // --- MEDIA START LOGICA ---
+  // 1. ALLEEN AUDIO STARTEN (Voorkomt iPhone Audio Conflict)
   const handleStart = () => {
-    // 1. Audio direct starten op de klik
     if (audioRef.current) {
       audioRef.current.volume = 0.5;
       audioRef.current.muted = false;
-      audioRef.current.play().catch(e => console.error("Audio error:", e));
+      audioRef.current.play().catch(e => console.log("Audio start error:", e));
     }
-
-    // 2. Video 'primen' (even starten en pauzeren voor later)
-    if (videoRef.current) {
-      videoRef.current.muted = false;
-      videoRef.current.play().then(() => {
-        videoRef.current.pause();
-        videoRef.current.currentTime = 0;
-      }).catch(e => console.error("Video prime error:", e));
-    }
-
     setStarted(true);
   };
 
-  // --- EFFECTEN (Timers & Volume beheer) ---
+  // 2. REGELT WISSEL TUSSEN MUZIEK EN VIDEO
   useEffect(() => {
     if (!started) return;
 
-    // Volume beheer: Muziek zachter als Sam spreekt (slide 11)
-    if (audioRef.current) {
-      audioRef.current.volume = current === 11 ? 0.05 : 0.5;
+    // Is dit de video slide?
+    if (current === 11) {
+      // STOP muziek volledig (iPhone kan geen 2 dingen tegelijk horen)
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      // START video
+      if (videoRef.current) {
+        videoRef.current.muted = false;
+        videoRef.current.currentTime = 0;
+        videoRef.current.play().catch(e => console.log("Video autoplay blocked:", e));
+      }
+    } else {
+      // Zorg dat muziek speelt voor alle andere slides
+      if (audioRef.current && audioRef.current.paused) {
+        audioRef.current.play().catch(() => {});
+      }
     }
 
-    // Video afspelen als slide 11 bereikt is
-    if (current === 11 && videoRef.current) {
-      videoRef.current.play().catch(e => console.log("Video playback error", e));
-    }
-
-    // Slide Timer
+    // Timer logica
     const duration = current === 10 ? 22000 : (current === 11 ? 11000 : 7000);
     const timer = setTimeout(() => {
       if (current < slides.length - 1) {
@@ -80,7 +78,7 @@ export default function WrappedStory({ onComplete }) {
 
   const s = slides[current];
 
-  // Animaties (Simpel = Geen Lag)
+  // Geoptimaliseerde animaties voor mobiel (Geen blur)
   const slideVariants = {
     initial: { opacity: 0, scale: 1 },
     animate: { opacity: 1, scale: 1 },
@@ -92,6 +90,7 @@ export default function WrappedStory({ onComplete }) {
       <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center z-[500]">
         <div className="text-9xl mb-12">🎁</div>
         <h1 className="text-white text-5xl font-black mb-8 italic uppercase tracking-tighter">USOCIA<br/><span className="text-[#1DB954]">UNWRAPPED</span></h1>
+        <p className="text-white/50 mb-8 text-sm">Zet je geluid aan! 🔊</p>
         <button 
           onClick={handleStart} 
           className="bg-[#1DB954] text-black px-12 py-6 rounded-full font-black text-2xl uppercase tracking-widest active:scale-95 transition-transform shadow-2xl"
@@ -105,8 +104,9 @@ export default function WrappedStory({ onComplete }) {
   return (
     <div className="fixed inset-0 w-full h-full bg-black overflow-hidden touch-none select-none font-sans">
       
-      {/* MEDIA (Altijd in de DOM) */}
-      <audio ref={audioRef} src="/muziek.mp3" loop playsInline />
+      {/* MEDIA ELEMENTEN */}
+      <audio ref={audioRef} src="/muziek.mp3" loop playsInline preload="auto" />
+      
       <video
         ref={videoRef}
         src="/video.mp4"
@@ -143,13 +143,16 @@ export default function WrappedStory({ onComplete }) {
           style={{ backgroundColor: s.bg }}
         >
           
-          {/* LAYOUT: SKIP (Krakau doorstreept) */}
+          {/* LAYOUT: SKIP (KRAKAU STREEP) */}
           {s.layout === 'skip' && (
             <div className="z-10 flex flex-col items-center px-6">
-               <h1 className="text-5xl font-black text-white italic leading-[0.9] uppercase mb-8 tracking-tighter opacity-60">{s.title}</h1>
-               {/* Hier is de streep erdoorheen */}
-               <h2 className="text-6xl font-black text-white line-through decoration-red-600 decoration-4 px-4 py-2 inline-block mb-10 rotate-[-5deg] uppercase shadow-2xl">{s.sub}</h2>
-               <p className="text-xl font-bold text-white italic opacity-90 text-center mb-8 px-4 leading-tight">{s.desc}</p>
+               <h1 className="text-5xl font-black text-white italic leading-[0.9] uppercase mb-10 tracking-tighter opacity-70">{s.title}</h1>
+               <div className="relative inline-block mb-10 rotate-[-5deg]">
+                 <h2 className="text-7xl font-black text-white uppercase">{s.sub}</h2>
+                 {/* Rode Streep */}
+                 <div className="absolute top-1/2 left-[-10%] w-[120%] h-3 bg-red-600 -translate-y-1/2 rotate-[-2deg] shadow-lg" />
+               </div>
+               <p className="text-xl font-bold text-white italic opacity-90 leading-tight">{s.desc}</p>
             </div>
           )}
 
@@ -184,7 +187,7 @@ export default function WrappedStory({ onComplete }) {
                       <motion.div 
                         className="w-10 h-10 rounded-full absolute -top-3 flex items-center justify-center bg-white shadow-lg"
                         animate={{ 
-                          left: city.n === 'Wenen' ? ['0%', '42%', '10%', '18%', '88%'] : ['0%', `${30 + i * 12}%`, `${65 + Math.random() * 10}%`, '82%'] 
+                          left: city.n === 'Wenen' ? ['0%', '42%', '10%', '18%', '88%'] : ['0%', `${30 + i * 12}%`, `${65 + Math.random() * 10}%`, '80%'] 
                         }}
                         transition={{ duration: 19, times: [0, 0.2, 0.5, 0.8, 1], ease: "easeInOut" }}
                       >
@@ -206,7 +209,7 @@ export default function WrappedStory({ onComplete }) {
             </div>
           )}
 
-          {/* LAYOUT: VIDEO OVERLAY TEXT */}
+          {/* LAYOUT: VIDEO TEXT */}
           {s.layout === 'video' && (
             <div className="absolute bottom-24 left-6 right-6 text-left bg-[#1DB954] p-5 rounded-xl z-[150] rotate-[-2deg] shadow-2xl">
               <h2 className="text-black text-2xl font-black italic uppercase leading-tight tracking-tight">Sam heeft het<br/>laatste woord...</h2>
