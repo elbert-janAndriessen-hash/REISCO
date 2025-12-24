@@ -1,0 +1,55 @@
+.wrapped-app { width: 100vw; height: 100vh; background: #000; display: flex; align-items: center; justify-content: center; }
+.wrapped-frame { width: 100%; max-width: 440px; height: 100%; max-height: 850px; position: relative; overflow: hidden; }
+
+/* Progress Bars */
+.progress-container { position: absolute; top: 15px; left: 10px; right: 10px; display: flex; gap: 4px; z-index: 100; }
+.progress-bg { height: 3px; flex: 1; background: rgba(255,255,255,0.2); border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; background: #fff; }
+
+/* Circles Layout */
+.layout-circles { height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; overflow: hidden; }
+.circles-bg { 
+  position: absolute; width: 200%; height: 100%; 
+  background: repeating-radial-gradient(circle, #000, #000 20px, #fff 20px, #fff 40px); 
+  opacity: 0.1; animation: rotate 20s linear infinite; 
+}
+.huge-text-outline { font-size: 140px; font-weight: 900; margin: 0; line-height: 0.8; -webkit-text-stroke: 4px currentColor; color: transparent !important; z-index: 2; }
+.huge-text-solid { font-size: 140px; font-weight: 900; margin: -20px 0 0; line-height: 0.8; z-index: 2; }
+
+/* Squiggly Layout */
+.layout-squiggly { height: 100%; position: relative; display: flex; align-items: center; justify-content: center; }
+.squiggly-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.outline-num { font-size: 100px; font-weight: 900; -webkit-text-stroke: 2px; color: transparent; text-align: center; }
+.sub-caption { text-align: center; font-weight: 800; letter-spacing: 2px; margin-top: 10px; }
+
+/* List Blocks Layout */
+.layout-list { height: 100%; padding: 80px 25px; }
+.list-title { font-size: 40px; font-weight: 900; margin-bottom: 30px; }
+.black-block { 
+  background: #000; color: #fff; padding: 15px 20px; font-size: 28px; 
+  font-weight: 900; margin-bottom: 10px; transform: rotate(-1deg); width: fit-content; 
+}
+.rank-num { opacity: 0.5; margin-right: 15px; }
+
+/* Starburst Layout */
+.layout-star { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.star-shape { 
+  width: 250px; height: 250px; display: flex; align-items: center; justify-content: center;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  animation: pulse 2s infinite;
+}
+.star-icon { font-size: 80px; }
+
+/* Race Finale (DRUK & KLEURRIJK) */
+.layout-race { height: 100%; padding: 60px 20px; position: relative; z-index: 10; }
+.chaos-bg { 
+  position: absolute; inset: 0; z-index: -1; opacity: 0.5;
+  background: conic-gradient(from 0deg, #ff4757, #3742fa, #ffa502, #2ed573, #ff4757); 
+  animation: rotate 4s linear infinite; transform: scale(2);
+}
+.race-lane { margin-bottom: 25px; }
+.lane-path { height: 40px; background: rgba(255,255,255,0.1); border-radius: 20px; position: relative; border: 1px solid rgba(255,255,255,0.2); }
+.race-dot { width: 36px; height: 36px; border-radius: 50%; position: absolute; top: 1px; left: 0; border: 2px solid #fff; }
+
+@keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
