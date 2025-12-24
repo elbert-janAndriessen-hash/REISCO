@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -30,45 +31,60 @@ export default function WrappedStory({ onComplete }) {
   const audioRef = useRef(null);
   const videoRef = useRef(null);
 
-  // iPhone Fix: Forceer video play zodra de slide verschijnt
-  useEffect(() => {
-    if (current === 11 && videoRef.current) {
-      videoRef.current.play().catch(err => console.log("Video playback failed: ", err));
-    }
-  }, [current]);
-
+  // Timer logica
   useEffect(() => {
     if (!started) return;
 
-    if (audioRef.current) {
-      audioRef.current.volume = current === 11 ? 0.05 : 0.5;
-      audioRef.current.play().catch(() => {});
-    }
+    const isRace = current === 10;
+    const isVideo = current === 11;
+    const duration = isRace ? 22000 : (isVideo ? 11000 : 7000);
 
-    const duration = current === 10 ? 22000 : (current === 11 ? 11000 : 7000);
     const timer = setTimeout(() => {
-      if (current < slides.length - 1) setCurrent(current + 1);
-      else if (onComplete) onComplete();
+      if (current < slides.length - 1) {
+        setCurrent(prev => prev + 1);
+      } else if (onComplete) {
+        onComplete();
+      }
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [current, started, onComplete]);
+  }, [current, started]);
 
-  const handleStart = () => setStarted(true);
+  // Audio volume logica
+  useEffect(() => {
+    if (started && audioRef.current) {
+      audioRef.current.volume = current === 11 ? 0.05 : 0.5;
+    }
+  }, [current, started]);
 
-  // Geoptimaliseerde animaties voor iPhone (minder blur, minder scale)
+  const handleStart = () => {
+    setStarted(true);
+    // iPhone unlock audio/video
+    if (audioRef.current) audioRef.current.play().catch(() => {});
+    if (videoRef.current) {
+        videoRef.current.load();
+        videoRef.current.play().catch(() => {});
+    }
+  };
+
+  const s = slides[current];
+
+  // Geoptimaliseerd voor iPhone (Geen blur!)
   const slideVariants = {
-    initial: { scale: 1.1, opacity: 0 },
-    animate: { scale: 1, opacity: 1 },
-    exit: { scale: 0.95, opacity: 0 }
+    initial: { opacity: 0, scale: 1 },
+    animate: { opacity: 1, scale: 1 },
+    exit: { opacity: 0, scale: 1 }
   };
 
   if (!started) {
     return (
       <div className="fixed inset-0 bg-black flex flex-col items-center justify-center p-8 text-center z-[200]">
-        <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 3 }} className="text-8xl mb-12">🎁</motion.div>
-        <h1 className="text-white text-5xl font-black mb-8 italic uppercase leading-none">USOCIA<br/><span className="text-[#1DB954]">UNWRAPPED</span></h1>
-        <button onClick={handleStart} className="bg-[#1DB954] text-black px-12 py-5 rounded-full font-black text-2xl uppercase tracking-widest active:scale-90 transition-transform shadow-2xl">
+        <div className="text-8xl mb-12">🎁</div>
+        <h1 className="text-white text-5xl font-black mb-8 italic uppercase tracking-tighter">USOCIA<br/><span className="text-[#1DB954]">UNWRAPPED</span></h1>
+        <button 
+          onClick={handleStart} 
+          className="bg-[#1DB954] text-black px-12 py-5 rounded-full font-black text-2xl uppercase tracking-widest active:scale-95 transition-transform"
+        >
           START
         </button>
       </div>
@@ -76,7 +92,7 @@ export default function WrappedStory({ onComplete }) {
   }
 
   return (
-    <div className="fixed inset-0 w-full h-full bg-black flex flex-col items-center justify-center overflow-hidden touch-none">
+    <div className="fixed inset-0 w-full h-full bg-black overflow-hidden touch-none select-none">
       <audio ref={audioRef} src="/muziek.mp3" loop playsInline />
       
       {/* Progress Bars */}
@@ -100,8 +116,8 @@ export default function WrappedStory({ onComplete }) {
           initial="initial"
           animate="animate"
           exit="exit"
-          transition={{ duration: 0.5 }}
-          className="w-full h-full flex flex-col items-center justify-center p-6 text-center relative overflow-hidden will-change-transform"
+          transition={{ duration: 0.4 }}
+          className="w-full h-full flex flex-col items-center justify-center p-6 text-center relative overflow-hidden"
           style={{ backgroundColor: s.bg }}
         >
           {/* LAYOUT: HERO */}
@@ -118,7 +134,7 @@ export default function WrappedStory({ onComplete }) {
               <div className="text-8xl mb-4">🍟</div>
               <h1 className="text-7xl font-black text-white mb-2 tracking-tighter">{s.title}</h1>
               <h2 className="text-2xl font-black text-yellow-400 bg-black px-4 py-1 rotate-[-3deg] inline-block mb-6 uppercase tracking-widest">{s.sub}</h2>
-              <p className="text-lg font-bold text-white italic max-w-[260px] px-4 leading-tight">{s.desc}</p>
+              <p className="text-lg font-bold text-white italic max-w-[260px] leading-tight">{s.desc}</p>
             </div>
           )}
 
@@ -158,16 +174,16 @@ export default function WrappedStory({ onComplete }) {
                  ))}
                </div>
                <motion.div 
-                 initial={{ opacity: 0, scale: 1.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 19.8 }}
+                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 19.8 }}
                  className="absolute inset-0 bg-red-600 flex flex-col items-center justify-center z-[120] p-6"
                >
                  <h1 className="text-7xl font-black text-white italic leading-none mb-4">WENEN!</h1>
-                 <p className="bg-white text-black px-8 py-3 font-black text-2xl uppercase tracking-tighter rotate-3 shadow-xl">GEWONNEN!</p>
+                 <p className="bg-white text-black px-8 py-3 font-black text-2xl uppercase rotate-3">GEWONNEN!</p>
                </motion.div>
             </div>
           )}
 
-          {/* LAYOUT: VIDEO - IPHONE OPTIMIZED */}
+          {/* LAYOUT: VIDEO */}
           {s.layout === 'video' && (
             <div className="absolute inset-0 bg-black flex items-center justify-center z-[130]">
               <video 
@@ -175,10 +191,10 @@ export default function WrappedStory({ onComplete }) {
                 src="/video.mp4" 
                 playsInline 
                 webkit-playsinline="true"
-                preload="auto"
+                autoPlay
                 className="w-full h-full object-cover"
               />
-              <div className="absolute bottom-20 left-6 right-6 text-left bg-[#1DB954] p-5 rounded-xl shadow-2xl rotate-[-2deg]">
+              <div className="absolute bottom-20 left-6 right-6 text-left bg-[#1DB954] p-5 rounded-xl rotate-[-2deg]">
                 <h2 className="text-black text-2xl font-black italic uppercase leading-tight">Sam heeft het<br/>laatste woord...</h2>
               </div>
             </div>
@@ -187,7 +203,7 @@ export default function WrappedStory({ onComplete }) {
           {/* FALLBACK FOR TEXT SLIDES */}
           {['stats', 'genres', 'skip', 'fact', 'list', 'weird', 'music', 'age'].includes(s.layout) && (
             <div className="z-10 flex flex-col items-center w-full px-4">
-               <motion.h1 className="text-6xl font-black text-white italic leading-[0.9] uppercase mb-6 tracking-tighter">{s.title}</motion.h1>
+               <h1 className="text-6xl font-black text-white italic leading-[0.9] uppercase mb-6 tracking-tighter">{s.title}</h1>
                <h2 className="text-2xl font-black text-black bg-white px-4 py-1 inline-block mb-6 rotate-2 uppercase">{s.sub}</h2>
                {s.desc && <p className="text-lg font-bold text-white italic opacity-90 leading-snug mb-8 text-center px-4">{s.desc}</p>}
                {s.items && (
