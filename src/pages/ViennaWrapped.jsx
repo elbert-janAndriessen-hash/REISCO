@@ -30,45 +30,42 @@ export default function WrappedStory({ onComplete }) {
   const audioRef = useRef(null);
   const videoRef = useRef(null);
 
-  // 1. START LOGICA (User Gesture Unlock)
+  // --- MEDIA START LOGICA ---
   const handleStart = () => {
-    // Start de achtergrondmuziek
+    // 1. Audio direct starten op de klik
     if (audioRef.current) {
       audioRef.current.volume = 0.5;
       audioRef.current.muted = false;
-      audioRef.current.play().catch(e => console.log("Audio play failed", e));
+      audioRef.current.play().catch(e => console.error("Audio error:", e));
     }
 
-    // Prime de video (Start -> Pauzeer direct)
-    // Hierdoor "mag" de telefoon de video later afspelen met geluid
+    // 2. Video 'primen' (even starten en pauzeren voor later)
     if (videoRef.current) {
-      videoRef.current.muted = false; // Zorg dat geluid aan staat
+      videoRef.current.muted = false;
       videoRef.current.play().then(() => {
         videoRef.current.pause();
         videoRef.current.currentTime = 0;
-      }).catch(e => console.log("Video priming failed", e));
+      }).catch(e => console.error("Video prime error:", e));
     }
 
     setStarted(true);
   };
 
-  // 2. TIMING EN SLIDE LOGICA
+  // --- EFFECTEN (Timers & Volume beheer) ---
   useEffect(() => {
     if (!started) return;
 
-    // VOLUME MANAGEMENT
+    // Volume beheer: Muziek zachter als Sam spreekt (slide 11)
     if (audioRef.current) {
-      // Als we bij de video zijn (slide 11), muziek zacht. Anders normaal.
       audioRef.current.volume = current === 11 ? 0.05 : 0.5;
     }
 
-    // VIDEO AFSPELEN
+    // Video afspelen als slide 11 bereikt is
     if (current === 11 && videoRef.current) {
-      // Nu pas echt afspelen
       videoRef.current.play().catch(e => console.log("Video playback error", e));
     }
 
-    // TIMERS
+    // Slide Timer
     const duration = current === 10 ? 22000 : (current === 11 ? 11000 : 7000);
     const timer = setTimeout(() => {
       if (current < slides.length - 1) {
@@ -83,7 +80,7 @@ export default function WrappedStory({ onComplete }) {
 
   const s = slides[current];
 
-  // Geoptimaliseerde animaties (Geen blur = Geen lag)
+  // Animaties (Simpel = Geen Lag)
   const slideVariants = {
     initial: { opacity: 0, scale: 1 },
     animate: { opacity: 1, scale: 1 },
@@ -108,10 +105,8 @@ export default function WrappedStory({ onComplete }) {
   return (
     <div className="fixed inset-0 w-full h-full bg-black overflow-hidden touch-none select-none font-sans">
       
-      {/* MEDIA: ALTIJD IN DOM */}
+      {/* MEDIA (Altijd in de DOM) */}
       <audio ref={audioRef} src="/muziek.mp3" loop playsInline />
-      
-      {/* VIDEO: Fullscreen, maar onzichtbaar (opacity 0) tot slide 11 */}
       <video
         ref={videoRef}
         src="/video.mp4"
@@ -148,7 +143,17 @@ export default function WrappedStory({ onComplete }) {
           style={{ backgroundColor: s.bg }}
         >
           
-          {/* MCDONALDS */}
+          {/* LAYOUT: SKIP (Krakau doorstreept) */}
+          {s.layout === 'skip' && (
+            <div className="z-10 flex flex-col items-center px-6">
+               <h1 className="text-5xl font-black text-white italic leading-[0.9] uppercase mb-8 tracking-tighter opacity-60">{s.title}</h1>
+               {/* Hier is de streep erdoorheen */}
+               <h2 className="text-6xl font-black text-white line-through decoration-red-600 decoration-4 px-4 py-2 inline-block mb-10 rotate-[-5deg] uppercase shadow-2xl">{s.sub}</h2>
+               <p className="text-xl font-bold text-white italic opacity-90 text-center mb-8 px-4 leading-tight">{s.desc}</p>
+            </div>
+          )}
+
+          {/* LAYOUT: MCD */}
           {s.layout === 'mcd' && (
             <div className="z-10 flex flex-col items-center px-4">
               <div className="text-8xl mb-6">🍟</div>
@@ -158,7 +163,7 @@ export default function WrappedStory({ onComplete }) {
             </div>
           )}
 
-          {/* RACE */}
+          {/* LAYOUT: RACE */}
           {s.layout === 'race' && (
             <div className="w-full h-full pt-28 pb-12 flex flex-col z-10 px-4">
               <h2 className="text-xl font-black text-white italic mb-10 uppercase tracking-widest">Wie wint 2026?</h2>
@@ -177,9 +182,9 @@ export default function WrappedStory({ onComplete }) {
                         transition={{ duration: 19, times: [0, 0.2, 0.5, 0.8, 1], ease: "easeInOut" }}
                       />
                       <motion.div 
-                        className="w-10 h-10 rounded-full absolute -top-3 flex items-center justify-center bg-white shadow-lg border-2 border-black"
+                        className="w-10 h-10 rounded-full absolute -top-3 flex items-center justify-center bg-white shadow-lg"
                         animate={{ 
-                          left: city.n === 'Wenen' ? ['0%', '44%', '10%', '19%', '89%'] : ['0%', `${30 + i * 12}%`, `${65 + Math.random() * 10}%`, '80%'] 
+                          left: city.n === 'Wenen' ? ['0%', '42%', '10%', '18%', '88%'] : ['0%', `${30 + i * 12}%`, `${65 + Math.random() * 10}%`, '82%'] 
                         }}
                         transition={{ duration: 19, times: [0, 0.2, 0.5, 0.8, 1], ease: "easeInOut" }}
                       >
@@ -201,7 +206,7 @@ export default function WrappedStory({ onComplete }) {
             </div>
           )}
 
-          {/* VIDEO OVERLAY TEXT */}
+          {/* LAYOUT: VIDEO OVERLAY TEXT */}
           {s.layout === 'video' && (
             <div className="absolute bottom-24 left-6 right-6 text-left bg-[#1DB954] p-5 rounded-xl z-[150] rotate-[-2deg] shadow-2xl">
               <h2 className="text-black text-2xl font-black italic uppercase leading-tight tracking-tight">Sam heeft het<br/>laatste woord...</h2>
@@ -209,7 +214,7 @@ export default function WrappedStory({ onComplete }) {
           )}
 
           {/* OVERIGE SLIDES */}
-          {['hero', 'stats', 'genres', 'skip', 'fact', 'list', 'weird', 'music', 'age'].includes(s.layout) && s.layout !== 'mcd' && (
+          {['hero', 'stats', 'genres', 'fact', 'list', 'weird', 'music', 'age'].includes(s.layout) && s.layout !== 'mcd' && (
             <div className="z-10 flex flex-col items-center w-full px-6">
               <h1 className="text-6xl font-black text-white italic leading-[0.8] uppercase mb-8 tracking-tighter drop-shadow-md">{s.title}</h1>
               <h2 className="text-2xl font-black text-black bg-white px-6 py-2 inline-block mb-10 rotate-2 uppercase">{s.sub}</h2>
@@ -217,7 +222,7 @@ export default function WrappedStory({ onComplete }) {
               {s.items && (
                 <div className="w-full space-y-4">
                   {s.items.map((it, idx) => (
-                    <div key={idx} className="bg-white/10 border-2 border-white/20 p-5 rounded-3xl font-black text-2xl uppercase italic text-white shadow-xl">
+                    <div key={idx} className="bg-white/10 border-2 border-white/20 p-5 rounded-3xl font-black text-2xl uppercase italic text-white shadow-xl text-center">
                       {it}
                     </div>
                   ))}
